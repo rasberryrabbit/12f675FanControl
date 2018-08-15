@@ -1,0 +1,11 @@
+main
+	ADC_Read
+		Delay_22us
+	Mul_32x32_U
+	Div_32x32_U
+	tempidx
+		EEPROM_Read
+	Mul_16x16_U
+	Div_16x16_U
+	Delay_500us
+Interrupt

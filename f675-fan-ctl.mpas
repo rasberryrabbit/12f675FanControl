@@ -1,0 +1,171 @@
+program f675_fan_ctl;
+
+const
+  VRES=2200;   // 2.2k
+  R_C50=1784;  // resistance at 50 celcious
+  // PWM 255, 490Hz
+  CPWM_MAX=255;
+  CPWM_MIN=255-CPWM_MAX;
+  { <------------ this values must be re-calc after changing CPWM_MAX }
+  CPWM_BASE_75=192; // base value of PWM (0-255), 40%(102, noisy). 50%(127), 75%(192)
+  CPWM_BASE_50=127;
+  CPWM_BASE_40=102;
+  CPWM_BASE_30=79;
+  // 25 level - 30~55 celcius
+  CPWM_INC_75=25;  // PWM increasement per celcius * 10, 40%(59, noisy). 50%(50), 75%(25)
+  CPWM_INC_50=50;
+  CPWM_INC_40=59;
+  CPWM_INC_30=68;
+  { ------------> }
+
+var
+  PWM_OUT:sbit at GP2_bit;
+  PWM_HIGH:sbit at GP4_bit;
+  PWM_75_0:sbit at GP5_bit;
+  PWM_50_0:sbit at GP1_bit;
+  PWM_FLAG:byte;
+  PWM_BASE:byte;
+  PWM_INC:byte;
+  // analog input
+  rdata: word;
+  rtemp: byte;
+  rreg : dword;
+  // PWM
+  PWM,LPWM,ON_PWM:byte;
+  tpwm:word;
+  PWM_State :bit;
+
+// for PWM, 0~255
+{ old
+procedure Interrupt(); iv 0x0004; ics ICS_AUTO;
+begin
+  if TMR0IF_bit=1 then begin
+    if PWM_State=0 then begin
+      if PWM>0 then
+        PWM_OUT:=1;
+      TMR0:=255-PWM+CPWM_MIN;
+      LPWM:=PWM+CPWM_MIN;
+      PWM_State:=1;
+    end else begin
+      if LPWM<255 then
+        PWM_OUT:=0;
+      TMR0:=LPWM;
+      PWM_State:=0;
+    end;
+    TMR0IF_bit:=0;
+  end;
+end;
+}
+
+procedure Interrupt(); iv 0x0004; ics ICS_AUTO;
+begin
+     if T0IF_bit=1 then begin
+       { PWM MAX 96% }
+       if PWM_OUT=0 then begin
+         ON_PWM:=PWM;
+         if ON_PWM=0 then
+           TMR0:=ON_PWM
+         else begin
+           TMR0:=CPWM_MAX-ON_PWM;
+           PWM_OUT:=1;
+         end;
+       end else begin
+         TMR0:=ON_PWM;
+         PWM_OUT:=0;
+       end;
+       T0IF_bit:=0;
+     end;
+end;
+
+// read adc compare table in eeprom. 20~55 celcius
+function tempidx(r:word):byte;
+var
+  idx:byte;
+  tempr:word;
+begin
+  Result:=0;
+  if PWM_HIGH=0 then
+    idx:=0     // 20 celcius - ground GP4
+    else
+      idx:=20; // 30 celcius - NC GP4
+  while (idx<72) do begin
+    Lo(tempr):=EEPROM_Read(idx);
+    Hi(tempr):=EEPROM_Read(idx+1);
+    if tempr>r then
+      idx:=idx+2
+      else begin
+        break;
+      end;
+    Inc(Result);
+  end;
+end;
+
+
+begin
+  GPIO:=0;
+  NOT_GPPU_bit:=0;
+  WPU4_bit:=1;      // weak pullup for GP4
+  WPU5_bit:=1;
+  WPU2_bit:=1;
+  CMCON:=7;
+  ANSEL:=%00000001; // Analog channnel 1 only.
+  TRISIO:=%11111011;
+
+  //ADFM_bit:=1;
+  //ADON_bit:=1;
+  
+  // PWM and Timer0
+  PWM:=0;
+  LPWM:=0;
+  PWM_State:=0;
+  TMR0:=0;
+  T0CS_bit:=0;
+  PSA_bit:=0;      // 1:8 prescale ~ 465Hz @ 4MHz
+  PS2_bit:=0;
+  PS0_bit:=0;
+  TMR0IE_bit:=1;
+  PEIE_bit:=1;
+  GIE_bit:=1;
+
+  while True do begin
+    // PWM Mode
+    PWM_FLAG:=0;
+    if PWM_75_0=1 then
+      SetBit(PWM_FLAG,0);
+    if PWM_50_0=1 then
+      SetBit(PWM_FLAG,1);
+    case PWM_FLAG of
+    3: begin
+        PWM_BASE:=CPWM_BASE_40;
+        PWM_INC:=CPWM_INC_40;
+       end;
+    // GP5 GND
+    2: begin
+        PWM_BASE:=CPWM_BASE_50;
+        PWM_INC:=CPWM_INC_50;
+       end;
+    // GP1 GND
+    1: begin
+        PWM_BASE:=CPWM_BASE_75;
+        PWM_INC:=CPWM_INC_75;
+       end
+    else begin
+       PWM_BASE:=CPWM_BASE_30;
+       PWM_INC:=CPWM_INC_30;
+         end;
+    end;
+    // read temperature index
+    rdata:=ADC_Read(0);
+    rreg:=VRES*rdata*10 div (1024-rdata) div 10;    // get resister
+    rtemp:=tempidx(LoWord(rreg));
+    // get pwm
+    // (255 * 0.30) + (30-temperature) * (255*0.034)
+    tpwm:=PWM_BASE+rtemp*PWM_INC div 10;
+    if Hi(tpwm)>0 then
+      lo(tpwm):=CPWM_MAX;
+    if lo(tpwm)>CPWM_MAX then
+      lo(tpwm):=CPWM_MAX;
+    PWM:=Lo(tpwm);
+    Delay_500us;
+  end;
+end.
