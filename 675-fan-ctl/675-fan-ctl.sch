@@ -181,7 +181,6 @@ Wire Wire Line
 	5100 2950 5350 2950
 Wire Wire Line
 	5350 2950 5350 2850
-NoConn ~ 5100 3050
 $Comp
 L Device:Thermistor_NTC TH1
 U 1 1 5B73AE3D
@@ -221,7 +220,6 @@ $EndComp
 Wire Wire Line
 	5850 2850 5850 2700
 NoConn ~ 3900 2950
-NoConn ~ 3900 3150
 Wire Wire Line
 	6800 3650 6400 3650
 Connection ~ 6400 3650
@@ -337,4 +335,32 @@ Wire Wire Line
 	3600 3650 3300 3650
 Wire Wire Line
 	3900 3050 3600 3050
+$Comp
+L Connector:Conn_01x01_Male J6
+U 1 1 5B7496BC
+P 5400 3900
+F 0 "J6" H 5373 3830 50  0000 R CNN
+F 1 "Conn_01x01_Male" H 5373 3921 50  0000 R CNN
+F 2 "Connectors:Pin_d1.4mm_L8.5mm_W2.8mm_FlatFork" H 5400 3900 50  0001 C CNN
+F 3 "~" H 5400 3900 50  0001 C CNN
+	1    5400 3900
+	-1   0    0    1   
+$EndComp
+$Comp
+L Connector:Conn_01x01_Male J5
+U 1 1 5B7498D6
+P 3700 3900
+F 0 "J5" H 3806 4078 50  0000 C CNN
+F 1 "Conn_01x01_Male" H 3806 3987 50  0000 C CNN
+F 2 "Connectors:Pin_d1.4mm_L8.5mm_W2.8mm_FlatFork" H 3700 3900 50  0001 C CNN
+F 3 "~" H 3700 3900 50  0001 C CNN
+	1    3700 3900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3900 3150 3900 3900
+Wire Wire Line
+	5100 3050 5200 3050
+Wire Wire Line
+	5200 3050 5200 3900
 $EndSCHEMATC
