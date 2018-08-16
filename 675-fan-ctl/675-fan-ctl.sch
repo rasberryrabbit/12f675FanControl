@@ -363,4 +363,22 @@ Wire Wire Line
 	5100 3050 5200 3050
 Wire Wire Line
 	5200 3050 5200 3900
+$Comp
+L Device:CP C4
+U 1 1 5B74D34C
+P 2000 2700
+F 0 "C4" H 2118 2746 50  0000 L CNN
+F 1 "47u" H 2118 2655 50  0000 L CNN
+F 2 "Capacitors_THT:CP_Radial_D6.3mm_P2.50mm" H 2038 2550 50  0001 C CNN
+F 3 "~" H 2000 2700 50  0001 C CNN
+	1    2000 2700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2000 2850 2000 3000
+Wire Wire Line
+	2000 3000 2700 3000
+Wire Wire Line
+	2000 2550 2000 2450
+Connection ~ 2000 2450
 $EndSCHEMATC
